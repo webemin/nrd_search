@@ -1,0 +1,2 @@
+Default download directory location (should be exactly the same format)=C:/Some/Path/Here/
+Is Chrome warning as downloading file? (y/n)=y
