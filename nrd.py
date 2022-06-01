@@ -23,69 +23,7 @@ def wait_until_download(path_for_download):
     if os.path.isfile(path_for_download):
         return
 
-conf_f = open("./conf.txt", "r", encoding="utf8")
-conf_l = conf_f.readlines()
-conf_str = ""
-
-for conf in conf_l:
-    conf_str+=conf
-
-conf_default_download_dir = conf_str.split("\n")[0].split("=")[1]
-
-print(conf_default_download_dir)
-
-#kullanıcıdan tarih girişi alınsın mı sorgusu
-welcome = (""" 
-
-███╗░░██╗██████╗░██████╗░░░░░░░░██████╗███████╗░█████╗░██████╗░░█████╗░██╗░░██╗
-████╗░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██║░░██║
-██╔██╗██║██████╔╝██║░░██║█████╗╚█████╗░█████╗░░███████║██████╔╝██║░░╚═╝███████║
-██║╚████║██╔══██╗██║░░██║╚════╝░╚═══██╗██╔══╝░░██╔══██║██╔══██╗██║░░██╗██╔══██║
-██║░╚███║██║░░██║██████╔╝░░░░░░██████╔╝███████╗██║░░██║██║░░██║╚█████╔╝██║░░██║
-╚═╝░░╚══╝╚═╝░░╚═╝╚═════╝░░░░░░░╚═════╝░╚══════╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
-
-
-[1] USOM
-[2] WHOISDS
-[3] DEVAM
-
-- ile seçimi silebilirsiniz.
-
- """)
-
-print(welcome)
-
-isDevam = False
-isUsom = False
-isWhoisds = False
-
-def show_selected():
-    if(isUsom): print("Usom Seçildi\n")
-    if(isWhoisds): print("Whoisds Seçildi\n")
-
-while not isDevam:
-    s1 = input("Seçim: ")
-    print()
-    if(s1 == "1"):
-        isUsom = True
-        show_selected()
-    elif(s1 == "2"):
-        isWhoisds = True
-        show_selected()
-    elif(s1 == "3"):
-        isDevam = True
-        show_selected()
-    elif(s1 == "-1"):
-        isUsom = False
-        show_selected()
-    elif(s1 == "-2"):
-        isWhoisds = False
-        show_selected()
-    else:
-        print("Yanlış Seçim")
-
-
-if(isUsom):
+def usom_search():
     giris = input("Usomun tarih değerleri varsayılan (dün ve bugün) olarak kalsın mı?(y/n)")
     if giris == "n":
 
@@ -101,31 +39,16 @@ if(isUsom):
         date1_using = datetime.today() - timedelta(days=1)
         date2_using = datetime.today()
 
-    #kullanıcıdan oto enter sorgusu
     conf_usom_asking = conf_str.split("\n")[1].split("=")[1]
 
     if conf_usom_asking == "y": usom_asking = True
     else: usom_asking = False
 
-#webdriver ayarlama
-browser = webdriver.Chrome(executable_path="./chromedriver.exe")
-browser.maximize_window()
+    browser = webdriver.Chrome(executable_path="./chromedriver.exe")
+    browser.maximize_window()
 
-if(isWhoisds):
-    #whoisds işlemleri
-    browser.get("https://www.whoisds.com/newly-registered-domains")
-    whoisds_formated_date = whoisds_domain_date_format(browser.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div[1]/div[2]/div/table/tbody/tr[1]/td[3]").text)
-    path_to_zip_file = conf_default_download_dir+ "newly-registered-domains-" + whoisds_formated_date + ".zip"
-
-    browser.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div[1]/div[2]/div/table/tbody/tr[1]/td[4]/a/button").click()
-    wait_until_download(path_to_zip_file)
-
-
-if(isUsom):
-    #usom işlemleri
     browser.get("https://www.usom.gov.tr/")
 
-    #xml dosyasını indire basıp 10 saniye bekliyor
     browser.find_element_by_xpath("/html/body/app-root/app-layout/div/div/app-header/header/div/div[1]/div/div/nav[1]/ul/li[2]/a").click()
 
     time.sleep(2)
@@ -139,45 +62,6 @@ if(isUsom):
 
     wait_until_download(conf_default_download_dir + "url-list.xml")
 
-
-if(isWhoisds):
-    #whoisds zip dosyasını çıkarma
-    with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
-        zip_ref.extractall("./")
-
-#keyword listesini içeri alma
-keywords_f = open('./keywords.txt', 'r')
-keywords_l = keywords_f.readlines()
-
-keywords_str = ""
-
-for keyword in keywords_l:
-    keywords_str+=keyword
-
-#keywordler dizi haline getiriliyor 
-keywords_a = keywords_str.split("\n")
-keywords_a.pop()
-
-if(isWhoisds):
-    #whoisds domainlerini okuma
-    whoisds_domains_f = open('domain-names.txt', 'r')
-    whoisds_domains_l = whoisds_domains_f.readlines()
-
-    whoisds_domains_str = ""
-
-    for whoisds_domain in whoisds_domains_l:
-        whoisds_domains_str+=whoisds_domain
-
-    #whoisds domainleri dizi haline getiriliyor
-    whoisds_domains_a = whoisds_domains_str.split("\n")
-
-    if(not isUsom):
-        print("\nAranan Keywordler: ")
-        for b in keywords_a: print(str(b).split(" ")[0])
-    print()
-
-if(isUsom):
-    #usom domainlerini okuma
     tree = ET.parse(conf_default_download_dir + "url-list.xml")
     root = tree.getroot()
 
@@ -199,10 +83,127 @@ if(isUsom):
             index_of_usom+=1
         index_of_date+=1
 
-    #usom domainleri dizi haline getiriliyor
     usom_domains_a = usom_domains_str.split("\n")
+    return usom_domains_a
+
+def whoisds_search():
+
+    browser = webdriver.Chrome(executable_path="./chromedriver.exe")
+    browser.maximize_window()
+    
+    browser.get("https://www.whoisds.com/newly-registered-domains")
+
+    whoisds_formated_date = whoisds_domain_date_format(browser.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div[1]/div[2]/div/table/tbody/tr[1]/td[3]").text)
+    path_to_zip_file = conf_default_download_dir+ "newly-registered-domains-" + whoisds_formated_date + ".zip"
+
+    browser.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div[1]/div[2]/div/table/tbody/tr[1]/td[4]/a/button").click()
+    wait_until_download(path_to_zip_file)
+
+    with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
+        zip_ref.extractall("./")
+
+    whoisds_domains_f = open('domain-names.txt', 'r')
+    whoisds_domains_l = whoisds_domains_f.readlines()
+
+    whoisds_domains_str = ""
+
+    for whoisds_domain in whoisds_domains_l:
+        whoisds_domains_str+=whoisds_domain
+
+    whoisds_domains_a = whoisds_domains_str.split("\n")
+    
+    if(not isUsom):
+        print("\nAranan Keywordler: ")
+        for b in keywords_a: print(str(b).split(" ")[0])
+    print()
+
+    whoisds_domains_f.close()
+    return whoisds_domains_a
+   
+def file_to_str(file_path):
+    file_f = open(file_path, "r", encoding="utf8")
+    file_l = file_f.readlines()
+    file_str =""
+
+    for file in file_l:
+        file_str += file
+    
+    file_f.close()
+    return file_str
+
+def welcome_page():
+    welcome = (""" 
+
+    ███╗░░██╗██████╗░██████╗░░░░░░░░██████╗███████╗░█████╗░██████╗░░█████╗░██╗░░██╗
+    ████╗░██║██╔══██╗██╔══██╗░░░░░░██╔════╝██╔════╝██╔══██╗██╔══██╗██╔══██╗██║░░██║
+    ██╔██╗██║██████╔╝██║░░██║█████╗╚█████╗░█████╗░░███████║██████╔╝██║░░╚═╝███████║
+    ██║╚████║██╔══██╗██║░░██║╚════╝░╚═══██╗██╔══╝░░██╔══██║██╔══██╗██║░░██╗██╔══██║
+    ██║░╚███║██║░░██║██████╔╝░░░░░░██████╔╝███████╗██║░░██║██║░░██║╚█████╔╝██║░░██║
+    ╚═╝░░╚══╝╚═╝░░╚═╝╚═════╝░░░░░░░╚═════╝░╚══════╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
+
+
+    [1] USOM
+    [2] WHOISDS
+    [3] DEVAM
+
+    - ile seçimi silebilirsiniz.
+
+    """)
+    print(welcome)
+
+def chose_platform():
+    isDevam = False
+    isUsom = False
+    isWhoisds = False
+
+    def show_selected():
+        if(isUsom): print("Usom Seçildi\n")
+        if(isWhoisds): print("Whoisds Seçildi\n")
+
+    while not isDevam:
+        s1 = input("Seçim: ")
+        print()
+        if(s1 == "1"):
+            isUsom = True
+            show_selected()
+        elif(s1 == "2"):
+            isWhoisds = True
+            show_selected()
+        elif(s1 == "-1"):
+            isUsom = False
+            show_selected()
+        elif(s1 == "-2"):
+            isWhoisds = False
+            show_selected()
+        elif(s1 == "3"):
+            isDevam = True
+            show_selected()
+        else:
+            print("Yanlış Seçim")
+        
+    return isDevam, isUsom, isWhoisds
+
+
+conf_str = file_to_str("./conf.txt")
+
+keywords_str = file_to_str("./keywords.txt")
+keywords_a = keywords_str.split("\n")
 
 final_text = ""
+
+conf_default_download_dir = conf_str.split("\n")[0].split("=")[1]
+
+welcome_page()
+
+isDevam ,isUsom, isWhoisds = chose_platform()
+
+print("İndirilenler Dizini: " + conf_default_download_dir)
+
+if(isUsom):
+    usom_domains_a = usom_search()
+    
+if(isWhoisds):
+    whoisds_domains_a = whoisds_search()
 
 for keyword in keywords_a:
     final_text +="\n " +  "*"*10 + keyword + " keywordu " + "*"*10 + "\n\n"
@@ -223,9 +224,5 @@ for keyword in keywords_a:
                 print(usom_domain)
 
 final_text_f = open("result.txt", "w")
-
 final_text_f.write(final_text)
-
 final_text_f.close()
-if(isWhoisds): whoisds_domains_f.close()
-keywords_f.close()
