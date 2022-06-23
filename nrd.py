@@ -1,5 +1,4 @@
 from encodings import utf_8
-import string
 from selenium import webdriver
 from datetime import datetime, timedelta
 import zipfile
@@ -7,8 +6,7 @@ import time
 import os
 import xml.etree.ElementTree as ET
 import pandas
-import pyautogui
-
+import requests
 
 def whoisds_domain_date_format(finded_date):
     whoisds_domains_discovered = finded_date
@@ -41,30 +39,17 @@ def usom_search():
         date1_using = datetime.today() - timedelta(days=1)
         date2_using = datetime.today()
 
-    conf_usom_asking = conf_str.split("\n")[1].split("=")[1]
+    URL = "https://www.usom.gov.tr/url-list.xml"
 
-    if conf_usom_asking == "y": usom_asking = True
-    else: usom_asking = False
+    response = requests.get(URL)
 
-    browser = webdriver.Chrome(executable_path="./chromedriver.exe")
-    browser.maximize_window()
+    with open('url-list.xml', 'wb') as usom_f:
+        usom_f.write(response.content)
+    usom_f.close()
+    
+    wait_until_download("./url-list.xml")
 
-    browser.get("https://www.usom.gov.tr/")
-
-    browser.find_element_by_xpath("/html/body/app-root/app-layout/div/div/app-header/header/div/div[1]/div/div/nav[1]/ul/li[2]/a").click()
-
-    time.sleep(2)
-
-    if usom_asking:
-        print("\nUsomdan dosya indirilirken uyarı veriyor olarak ayarlandı. Değiştirmek için conf dosyasını düzenleyiniz.")
-        pyautogui.keyDown("shift")
-        for i in range(14) :pyautogui.press("tab")
-        pyautogui.keyUp("shift")
-        pyautogui.press("enter")
-
-    wait_until_download(conf_default_download_dir + "url-list.xml")
-
-    tree = ET.parse(conf_default_download_dir + "url-list.xml")
+    tree = ET.parse("./url-list.xml")
     root = tree.getroot()
 
     date_rage = pandas.date_range(date1_using,date2_using,freq='d')
