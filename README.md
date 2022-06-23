@@ -19,9 +19,12 @@ This script searches in new registered domains downloaded from usom and whoisds 
 
     [1] USOM
     [2] WHOISDS
-    [3] DEVAM
+    [3] Typo (bakımda)
+    [4] Show Selected
+    [5] Devam
 
     - ile seçimi silebilirsiniz.
 
 ------
 note: Don't forget to use the same version of google chrome and chromedriver.exe
+note2: Typo is not available for now

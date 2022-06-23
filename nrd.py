@@ -1,3 +1,4 @@
+from encodings import utf_8
 import string
 from selenium import webdriver
 from datetime import datetime, timedelta
@@ -7,6 +8,7 @@ import os
 import xml.etree.ElementTree as ET
 import pandas
 import pyautogui
+
 
 def whoisds_domain_date_format(finded_date):
     whoisds_domains_discovered = finded_date
@@ -79,7 +81,7 @@ def usom_search():
         index_of_usom = 0
         for index_of_usom in range(len(root[1])-1):
             if (root[1][index_of_usom][4].text).split(" ")[0] == str(date_rage[index_of_date]).split(" ")[0]:
-                usom_domains_str += "Tarih: " + root[1][index_of_usom][4].text.split(" ")[0] + "  Domain: " + (root[1][index_of_usom][1].text + "\n")
+                usom_domains_str += root[1][index_of_usom][4].text.split(" ")[0] + "=" + (root[1][index_of_usom][1].text + "\n")
             index_of_usom+=1
         index_of_date+=1
 
@@ -144,7 +146,9 @@ def welcome_page():
 
     [1] USOM
     [2] WHOISDS
-    [3] DEVAM
+    [3] Typo (bakımda)
+    [4] Show Selected
+    [5] Devam
 
     - ile seçimi silebilirsiniz.
 
@@ -155,33 +159,209 @@ def chose_platform():
     isDevam = False
     isUsom = False
     isWhoisds = False
+    isTypo = False
 
     def show_selected():
-        if(isUsom): print("Usom Seçildi\n")
-        if(isWhoisds): print("Whoisds Seçildi\n")
+        if(isUsom): print("Usom Seçildi")
+        if(isWhoisds): print("Whoisds Seçildi")
+        if(isTypo): print("Typo Açık")
 
     while not isDevam:
-        s1 = input("Seçim: ")
-        print()
-        if(s1 == "1"):
-            isUsom = True
-            show_selected()
-        elif(s1 == "2"):
-            isWhoisds = True
-            show_selected()
-        elif(s1 == "-1"):
-            isUsom = False
-            show_selected()
-        elif(s1 == "-2"):
-            isWhoisds = False
-            show_selected()
-        elif(s1 == "3"):
-            isDevam = True
-            show_selected()
-        else:
-            print("Yanlış Seçim")
+        s1 = input("\nSeçim: ")
+        if(s1 == "1"): isUsom = True
+        elif(s1 == "-1"): isUsom = False
+        elif(s1 == "2"): isWhoisds = True
+        elif(s1 == "-2"): isWhoisds = False
+        elif(s1 == "3"): isTypo = True
+        elif(s1 == "-3"): isTypo = False
+        elif(s1 == "4"): show_selected()
+        elif(s1 == "5"): isDevam = True
+        else: print("Yanlış Seçim")
         
-    return isDevam, isUsom, isWhoisds
+    return isUsom, isWhoisds, isTypo
+
+def chose_typo():
+    print("""
+    Uygulanmasını İstediğiniz Typoları Seçiniz:
+
+    [1] insertedKey
+    [2] skipLetter
+    [3] doubleLetter
+    [4] reverseLetter
+    [5] wrongVowel
+    [6] wrongKey
+
+    [7] Seçimler
+    [8] Devam
+
+    - ile seçimi silebilirsiniz.
+    
+    """)
+    isInsertedKey = False
+    isSkipLetter = False
+    isDoubleLetter = False
+    isReverseLetter = False
+    isWrongVovel = False
+    isWrongKey = False
+
+    isDevam = False
+
+    def show_selected():
+        if(isInsertedKey): print("insertedKey Seçildi")
+        if(isSkipLetter): print("skipLetter Seçildi")
+        if(isDoubleLetter): print("doubleLetter Açık")
+        if(isReverseLetter): print("reverseLetter Seçildi")
+        if(isWrongVovel): print("wrongVowel Seçildi")
+        if(isWrongKey): print("wrongKey Açık")
+
+    while not isDevam:
+        s1 = input("\nSeçim: ")
+        if(s1 == "1"): isInsertedKey = True
+        elif(s1 == "-1"): isInsertedKey = False
+        elif(s1 == "2"): isSkipLetter = True
+        elif(s1 == "-2"): isSkipLetter = False
+        elif(s1 == "3"): isDoubleLetter = True
+        elif(s1 == "-3"): isDoubleLetter = False
+        elif(s1 == "4"): isReverseLetter = True
+        elif(s1 == "-4"): isReverseLetter = False
+        elif(s1 == "5"): isWrongVovel = True
+        elif(s1 == "-5"): isWrongVovel = False
+        elif(s1 == "6"): isWrongKey = True
+        elif(s1 == "-6"): isWrongKey = False
+
+        elif(s1 == "7"): show_selected()
+        elif(s1 == "8"): isDevam = True
+        else: print("Yanlış Seçim")
+        
+    return isInsertedKey, isSkipLetter, isDoubleLetter, isReverseLetter, isWrongVovel, isWrongKey
+
+class TypoGenerator:
+
+    alphabet = "abcdefghijklmnopqrstuvwxyz0123456789"
+    vowels = "aeıioöuü"
+
+    def insertedKey(k):
+        kwds = []
+        alphabet = TypoGenerator.alphabet
+
+        for s in k:
+            for i in range(0, len(s)):
+                for char in alphabet:
+                    kwds.append(s[:i+1] + char + s[i+1:])
+
+        return kwds
+
+    def skipLetter(k):
+        kwds = []
+
+        for s in k:
+            for i in range(1, len(s)+1):
+                kwds.append(s[:i-1] + s[i:])
+
+        return kwds
+
+    def doubleLetter(k):
+        kwds = []
+        for s in k:
+            for i in range(0, len(s)+1):
+                kwds.append(s[:i] + s[i-1] + s[i:])
+
+        return kwds
+
+    def reverseLetter(k):
+        kwds = []
+        for s in k:
+            for i in range(0, len(s)):
+                letters = s[i-1:i+1:1]
+                if len(letters) != 2:
+                    continue
+            
+                reverse_letters = letters[1] + letters[0]
+                kwds.append(s[:i-1] + reverse_letters + s[i+1:])
+
+        return kwds
+
+    def wrongVowel(k):
+        kwds = []
+        vowels = TypoGenerator.vowels
+
+        for s in k:
+            for i in range(0, len(s)):
+                for letter in vowels:
+                    if s[i] in vowels:
+                        for vowel in vowels:
+                            s_list = list(s)
+                            s_list[i] = vowel
+                            kwd = "".join(s_list)
+                            kwds.append(kwd)
+
+        return kwds
+
+    def wrongKey(k):
+        kwds = []
+        alphabet = TypoGenerator.alphabet
+
+        for s in k:
+            for i in range(0, len(s)):
+                for letter in alphabet:
+                    kwd = s[:i] + letter + s[i+1:]
+                    kwds.append(kwd)
+                
+        return kwds
+
+def makeTypo(keywords_a):
+    isInsertedKey, isSkipLetter, isDoubleLetter, isReverseLetter, isWrongVovel, isWrongKey = chose_typo()
+    keywords_ac = keywords_a
+
+    if(isInsertedKey):
+        a = input("devam")
+        insertedkeys = TypoGenerator.insertedKey(keywords_ac)
+        #keywords_a.append("\nINSERTED\n")
+        for i in range(len(insertedkeys)):
+            keywords_a.append(insertedkeys[i])
+
+    if(isSkipLetter):
+        a = input("devam")
+        skipLetter = TypoGenerator.skipLetter(keywords_ac)
+        #keywords_a.append("\nSKIPLETTER\n")
+        for i in range(len(skipLetter)):
+            keywords_a.append(skipLetter[i])
+
+    if(isDoubleLetter):
+        a = input("devam")
+        doubleLetter = TypoGenerator.doubleLetter(keywords_ac)
+        #keywords_a.append("\nDOUBLE\n")
+        for i in range(len(doubleLetter)):
+            keywords_a.append(doubleLetter[i])
+
+    if(isReverseLetter):
+        a = input("devam")
+        reverseLetter = TypoGenerator.reverseLetter(keywords_ac)
+        #keywords_a.append("\nREVERSE\n")
+        for i in range(len(reverseLetter)):
+            keywords_a.append(reverseLetter[i])
+        
+    if(isWrongVovel):
+        a = input("devam")
+        wrongVowel = TypoGenerator.wrongVowel(keywords_ac)
+        #keywords_a.append("\nVowel\n")
+        for i in range(len(wrongVowel)):
+            keywords_a.append(wrongVowel[i])
+
+    if(isWrongKey):
+        a = input("devam")
+        wrongKey = TypoGenerator.wrongKey(keywords_ac)
+        #keywords_a.append("\nWRONGKEY\n")
+        for i in range(len(wrongKey)):
+            keywords_a.append(wrongKey[i])
+    
+    keywords_a = list(set(keywords_a))
+
+    f = open("newkeywords.txt", "a", encoding="utf8")
+    for i in range(len(keywords_a)):
+        f.write(str(keywords_a[i]) + "\n")
+    
+    return keywords_a
 
 
 conf_str = file_to_str("./conf.txt")
@@ -195,34 +375,33 @@ conf_default_download_dir = conf_str.split("\n")[0].split("=")[1]
 
 welcome_page()
 
-isDevam ,isUsom, isWhoisds = chose_platform()
+isUsom, isWhoisds, isTypo = chose_platform()
 
-print("İndirilenler Dizini: " + conf_default_download_dir)
+print("\nİndirilenler Dizini: " + conf_default_download_dir)
+
+if(isTypo):
+    keywords_a = makeTypo(keywords_a)
 
 if(isUsom):
     usom_domains_a = usom_search()
+    usom_domains_a = list(set(usom_domains_a))
     
 if(isWhoisds):
     whoisds_domains_a = whoisds_search()
+    whoisds_domains_a = list(set(whoisds_domains_a))
 
 for keyword in keywords_a:
-    final_text +="\n " +  "*"*10 + keyword + " keywordu " + "*"*10 + "\n\n"
-    print("\n " +  "*"*10 + keyword + " keywordu " + "*"*10 + "\n\n")
     if(isWhoisds):
-        final_text +="\n " +  "-"*10 + "whoisds domain" + "-"*10 + "\n"
-        print("\n " +  "-"*10 + "whoisds domain" + "-"*10 + "\n")
         for whoisds_domain in whoisds_domains_a:
             if keyword in whoisds_domain: 
-                final_text += whoisds_domain + "\n"
-                print(whoisds_domain)
+                final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Whoisds\n".format("Tarih Yok",whoisds_domain, keyword)
+                print("Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Whoisds".format("Tarih Yok",whoisds_domain, keyword))
     if(isUsom):
-        final_text +="\n " +  "-"*10 + "usom domain" + "-"*10 + "\n"
-        print("\n " +  "-"*10 + "usom domain" + "-"*10 + "\n")
         for usom_domain in usom_domains_a:
             if keyword in usom_domain: 
-                final_text += usom_domain + "\n"
-                print(usom_domain)
+                final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Usom\n".format(str(usom_domain).split("=")[0], str(usom_domain).split("=")[1], keyword)
+                print("Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Usom".format(str(usom_domain).split("=")[0], str(usom_domain).split("=")[1], keyword))
 
-final_text_f = open("result.txt", "w")
+final_text_f = open("result.txt", "w", encoding="utf-8")
 final_text_f.write(final_text)
 final_text_f.close()
