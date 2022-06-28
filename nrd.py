@@ -30,14 +30,18 @@ def usom_search():
         date1_i = input("Başlangıç Tarihini Giriniz (YIL-AY-GÜN): ")
         date1_data = date1_i.split("-")
 
-        date2_i = input("Bitiş Tarihini Giriniz (YIL-AY-GÜN): ")
+        date2_i = input("Bitiş Tarihini Giriniz (YIL-AY-GÜN) (t: bugünün tarihi): ")
         dates2_data = date2_i.split("-")
 
         date1_using = datetime(int(date1_data[0]), int(date1_data[1]), int(date1_data[2]))
-        date2_using = datetime(int(dates2_data[0]), int(dates2_data[1]), int(dates2_data[2]))
+
+        if(date2_i == "t"):
+            date2_using = datetime.today() + timedelta(days=1)
+        else:
+            date2_using = datetime(int(dates2_data[0]), int(dates2_data[1]), int(dates2_data[2])) + timedelta(days=1)
     else:
         date1_using = datetime.today() - timedelta(days=1)
-        date2_using = datetime.today()
+        date2_using = datetime.today() + timedelta(days=1)
 
     URL = "https://www.usom.gov.tr/url-list.xml"
 
@@ -55,7 +59,7 @@ def usom_search():
     date_rage = pandas.date_range(date1_using,date2_using,freq='d')
 
     print("\nBakılan Usom Tarihleri: ")
-    for a in date_rage: print(str(a).split(" ")[0])
+    for a in date_rage[:-1]: print(str(a).split(" ")[0])
     print("\nAranan Keywordler: ")
     for b in keywords_a: print(str(b).split(" ")[0])
     print()
@@ -153,12 +157,24 @@ def chose_platform():
 
     while not isDevam:
         s1 = input("\nSeçim: ")
-        if(s1 == "1"): isUsom = True
-        elif(s1 == "-1"): isUsom = False
-        elif(s1 == "2"): isWhoisds = True
-        elif(s1 == "-2"): isWhoisds = False
-        elif(s1 == "3"): isTypo = True
-        elif(s1 == "-3"): isTypo = False
+        if(s1 == "1"):
+            isUsom = True
+            print("Usom Seçildi, devam etmek için Devam'ı seçiniz.")
+        elif(s1 == "-1"): 
+            isUsom = False
+            print("Usom Devredışı, devam etmek için Devam'ı seçiniz.")
+        elif(s1 == "2"): 
+            isWhoisds = True
+            print("Whoisds Seçildi, devam etmek için Devam'ı seçiniz.")
+        elif(s1 == "-2"): 
+            isWhoisds = False
+            print("Whoisds Devredışı, devam etmek için Devam'ı seçiniz.")
+        elif(s1 == "3"): 
+            isTypo = True
+            print("Typo Seçildi, devam etmek için Devam'ı seçiniz.")
+        elif(s1 == "-3"): 
+            isTypo = False
+            print("Typo Devredışı, devam etmek için Devam'ı seçiniz.")
         elif(s1 == "4"): show_selected()
         elif(s1 == "5"): isDevam = True
         else: print("Yanlış Seçim")
@@ -369,24 +385,34 @@ if(isTypo):
 
 if(isUsom):
     usom_domains_a = usom_search()
-    usom_domains_a = list(set(usom_domains_a))
     
 if(isWhoisds):
     whoisds_domains_a = whoisds_search()
-    whoisds_domains_a = list(set(whoisds_domains_a))
+
+whoisds_domain_dd = []
+usom_domain_dd = []
 
 for keyword in keywords_a:
     if(isWhoisds):
         for whoisds_domain in whoisds_domains_a:
-            if keyword in whoisds_domain: 
+            if keyword in whoisds_domain and whoisds_domain not in whoisds_domain_dd:
                 final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Whoisds\n".format("Tarih Yok",whoisds_domain, keyword)
-                print("Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Whoisds".format("Tarih Yok",whoisds_domain, keyword))
+                whoisds_domain_dd.append(whoisds_domain)
     if(isUsom):
         for usom_domain in usom_domains_a:
-            if keyword in usom_domain: 
+            if keyword in usom_domain and usom_domain not in usom_domain_dd: 
                 final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Usom\n".format(str(usom_domain).split("=")[0], str(usom_domain).split("=")[1], keyword)
-                print("Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Usom".format(str(usom_domain).split("=")[0], str(usom_domain).split("=")[1], keyword))
+                usom_domain_dd.append(usom_domain)
+
+final_text_a = final_text.split("\n")
+final_text_a.sort()
+
+final_text_s = ""
+for i in final_text_a:
+    final_text_s += i + "\n"
+
+print(final_text_s)
 
 final_text_f = open("result.txt", "w", encoding="utf-8")
-final_text_f.write(final_text)
+final_text_f.write(final_text_s)
 final_text_f.close()
