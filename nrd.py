@@ -1,5 +1,4 @@
 from encodings import utf_8
-from selenium import webdriver
 from datetime import datetime, timedelta
 import zipfile
 import time
@@ -7,6 +6,8 @@ import os
 import xml.etree.ElementTree as ET
 import pandas
 import requests
+from bs4 import BeautifulSoup
+import  urllib.request
 
 def whoisds_domain_date_format(finded_date):
     whoisds_domains_discovered = finded_date
@@ -24,6 +25,7 @@ def wait_until_download(path_for_download):
         return
 
 def usom_search():
+
     giris = input("Usomun tarih değerleri varsayılan (dün ve bugün) olarak kalsın mı?(y/n)")
     if giris == "n":
 
@@ -41,28 +43,25 @@ def usom_search():
             date2_using = datetime(int(dates2_data[0]), int(dates2_data[1]), int(dates2_data[2])) + timedelta(days=1)
     else:
         date1_using = datetime.today() - timedelta(days=1)
-        date2_using = datetime.today() + timedelta(days=1)
-
+        date2_using = datetime.today() + timedelta(days=1)  
+        
     URL = "https://www.usom.gov.tr/url-list.xml"
 
     response = requests.get(URL)
 
-    with open('url-list.xml', 'wb') as usom_f:
+    with open('./temp/url-list.xml', 'wb') as usom_f:
         usom_f.write(response.content)
     usom_f.close()
     
-    wait_until_download("./url-list.xml")
+    wait_until_download("./temp/url-list.xml")
 
-    tree = ET.parse("./url-list.xml")
+    tree = ET.parse("./temp/url-list.xml")
     root = tree.getroot()
 
     date_rage = pandas.date_range(date1_using,date2_using,freq='d')
 
     print("\nBakılan Usom Tarihleri: ")
     for a in date_rage[:-1]: print(str(a).split(" ")[0])
-    print("\nAranan Keywordler: ")
-    for b in keywords_a: print(str(b).split(" ")[0])
-    print()
 
     usom_domains_str = ""
 
@@ -79,21 +78,30 @@ def usom_search():
 
 def whoisds_search():
 
-    browser = webdriver.Chrome(executable_path="./chromedriver.exe")
-    browser.maximize_window()
+    whoisds_source_code = urllib.request.urlopen("https://www.whoisds.com/newly-registered-domains")
+    soup = BeautifulSoup(whoisds_source_code, features="lxml")
+
+    whoisds_links = []
+    for link in soup.findAll('a'):
+        if 'whois-database/newly-registered-domains' in link.get('href'):
+            whoisds_links.append(link.get('href'))
     
-    browser.get("https://www.whoisds.com/newly-registered-domains")
+    whoisds_dates = []
+    for date in soup.findAll('td'):
+        if "Only Domains" in str(date):
+            whoisds_dates.append(str(date)[4:14])
+    whoisds_date = whoisds_dates[0]
 
-    whoisds_formated_date = whoisds_domain_date_format(browser.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div[1]/div[2]/div/table/tbody/tr[1]/td[3]").text)
-    path_to_zip_file = conf_default_download_dir+ "newly-registered-domains-" + whoisds_formated_date + ".zip"
+    whoisds_last_data_link = str(whoisds_links[0])
+    r_wds = requests.get(whoisds_last_data_link, allow_redirects=True)
+    open('./temp/whoisds.zip', 'wb').write(r_wds.content)
 
-    browser.find_element_by_xpath("/html/body/div[2]/div/div/div/div/div[1]/div[2]/div/table/tbody/tr[1]/td[4]/a/button").click()
-    wait_until_download(path_to_zip_file)
+    wait_until_download("./temp/whoisds.zip")
 
-    with zipfile.ZipFile(path_to_zip_file, 'r') as zip_ref:
-        zip_ref.extractall("./")
+    with zipfile.ZipFile("./temp/whoisds.zip", 'r') as zip_ref:
+        zip_ref.extractall("./temp/")
 
-    whoisds_domains_f = open('domain-names.txt', 'r')
+    whoisds_domains_f = open('./temp/domain-names.txt', 'r')
     whoisds_domains_l = whoisds_domains_f.readlines()
 
     whoisds_domains_str = ""
@@ -102,14 +110,9 @@ def whoisds_search():
         whoisds_domains_str+=whoisds_domain
 
     whoisds_domains_a = whoisds_domains_str.split("\n")
-    
-    if(not isUsom):
-        print("\nAranan Keywordler: ")
-        for b in keywords_a: print(str(b).split(" ")[0])
-    print()
 
     whoisds_domains_f.close()
-    return whoisds_domains_a
+    return whoisds_domains_a, whoisds_date
    
 def file_to_str(file_path):
     file_f = open(file_path, "r", encoding="utf8")
@@ -145,6 +148,7 @@ def welcome_page():
     print(welcome)
 
 def chose_platform():
+    
     isDevam = False
     isUsom = False
     isWhoisds = False
@@ -364,21 +368,14 @@ def makeTypo(keywords_a):
     
     return keywords_a
 
-
-conf_str = file_to_str("./conf.txt")
-
 keywords_str = file_to_str("./keywords.txt")
 keywords_a = keywords_str.split("\n")
 
 final_text = ""
 
-conf_default_download_dir = conf_str.split("\n")[0].split("=")[1]
-
 welcome_page()
 
 isUsom, isWhoisds, isTypo = chose_platform()
-
-print("\nİndirilenler Dizini: " + conf_default_download_dir)
 
 if(isTypo):
     keywords_a = makeTypo(keywords_a)
@@ -387,16 +384,23 @@ if(isUsom):
     usom_domains_a = usom_search()
     
 if(isWhoisds):
-    whoisds_domains_a = whoisds_search()
+    whoisds_domains_a, whoisds_date = whoisds_search()
 
 whoisds_domain_dd = []
 usom_domain_dd = []
+
+print("\nAranan Keywordler: ")
+for b in keywords_a:
+    print(str(b).split(" ")[0])
+    if b == '':
+        keywords_a.pop()
+print()
 
 for keyword in keywords_a:
     if(isWhoisds):
         for whoisds_domain in whoisds_domains_a:
             if keyword in whoisds_domain and whoisds_domain not in whoisds_domain_dd:
-                final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Whoisds\n".format("Tarih Yok",whoisds_domain, keyword)
+                final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Whoisds\n".format(whoisds_date, whoisds_domain, keyword)
                 whoisds_domain_dd.append(whoisds_domain)
     if(isUsom):
         for usom_domain in usom_domains_a:
