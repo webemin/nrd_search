@@ -1,11 +1,10 @@
 # nrd_search
-This script searches in new registered domains downloaded from usom and whoisds domains using selenium.
+This script searches input keywords in new registered domains downloaded from usom and whoisds domains.
 ------
 # Usage
 - cd nrd_search
+- Append keywords to keywords.txt file
 - pip install -r requirements.txt
-- Edit conf.txt file up to yourself
-- Append keywords to keywords.txt file (DON'T add any empty line in the file)
 - ptyhon nrd.py
 ------ 
 
@@ -26,5 +25,4 @@ This script searches in new registered domains downloaded from usom and whoisds 
     - ile seçimi silebilirsiniz.
 
 ------
-note: Don't forget to use the same version of google chrome and chromedriver.exe
-note2: Typo is not available for now
+note: Typo is not available for now
