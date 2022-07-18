@@ -3,3 +3,4 @@ requests
 elementpath
 beautifulsoup4
 urllib3
+lxml
