@@ -9,25 +9,18 @@ import requests
 from bs4 import BeautifulSoup
 import  urllib.request
 
-def whoisds_domain_date_format(finded_date):
-    whoisds_domains_discovered = finded_date
-    y = int(whoisds_domains_discovered.split("-")[0])
-    m = int(whoisds_domains_discovered.split("-")[1].replace("0", ""))
-    d = int(whoisds_domains_discovered.split("-")[2])
-    the_time = datetime(y, m, d)
-    d = the_time - timedelta(days=1)
-    return str(d).split(" ")[0]
-
 def wait_until_download(path_for_download):
     while not os.path.exists(path_for_download):
         time.sleep(1)
     if os.path.isfile(path_for_download):
         return
 
-def usom_search():
+def usom_search(isDefault, date1_i, date2_i):
+    
+    if isDefault == "interface": #eğer interfaceden alacaksak input ile değiştiriyoruz
+        isDefault = input("Usomun tarih değerleri varsayılan (dün ve bugün) olarak kalsın mı?(y/n)")
 
-    giris = input("Usomun tarih değerleri varsayılan (dün ve bugün) olarak kalsın mı?(y/n)")
-    if giris == "n":
+    if isDefault == "n":
 
         date1_i = input("Başlangıç Tarihini Giriniz (YIL-AY-GÜN): ")
         date1_data = date1_i.split("-")
@@ -41,9 +34,30 @@ def usom_search():
             date2_using = datetime.today() + timedelta(days=1)
         else:
             date2_using = datetime(int(dates2_data[0]), int(dates2_data[1]), int(dates2_data[2])) + timedelta(days=1)
-    else:
+
+    elif isDefault == "y":
         date1_using = datetime.today() - timedelta(days=1)
-        date2_using = datetime.today() + timedelta(days=1)  
+        date2_using = datetime.today() + timedelta(days=1)
+    
+    elif isDefault == "nn":
+        
+        date1_data = date1_i.split("-")
+        dates2_data = date2_i.split("-")
+
+        date1_using = datetime(int(date1_data[0]), int(date1_data[1]), int(date1_data[2]))
+
+        if(date2_i == "t"):
+            date2_using = datetime.today() + timedelta(days=1)
+        else:
+            date2_using = datetime(int(dates2_data[0]), int(dates2_data[1]), int(dates2_data[2])) + timedelta(days=1)
+    
+    elif isDefault == "yy":
+        date1_using = date1_i
+        date2_using = date2_i
+
+    
+    else:
+        print("Yanlış Giriş")
         
     URL = "https://www.usom.gov.tr/url-list.xml"
 
@@ -147,12 +161,7 @@ def welcome_page():
     """)
     print(welcome)
 
-def chose_platform():
-    
-    isDevam = False
-    isUsom = False
-    isWhoisds = False
-    isTypo = False
+def chose_platform(isDevam, isUsom, isWhoisds, isTypo):
 
     def show_selected():
         if(isUsom): print("Usom Seçildi")
