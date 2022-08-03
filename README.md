@@ -6,6 +6,16 @@ This script searches input keywords in new registered domains downloaded from us
 - Append keywords to keywords.txt file
 - pip install -r requirements.txt
 - ptyhon nrd.py
+------
+# Parameters
+- -u searches given keywords in the public database from www.usom.gov.tr
+
+- [--dates] [YYYY-MM-DD] [YYYY-MM-DD or -t(it is the shortcut for today's date)] After -u parameter to search between specific 
+dates in usom's database. By default it searches from yesterday to today.
+        
+- -w searches given keywords in the public database from www.whoisds.com
+        
+- -t applies typo to given keywords.
 ------ 
 
     ███╗░░██╗██████╗░██████╗░░░░░░░░██████╗███████╗░█████╗░██████╗░░█████╗░██╗░░██╗
@@ -16,13 +26,13 @@ This script searches input keywords in new registered domains downloaded from us
     ╚═╝░░╚══╝╚═╝░░╚═╝╚═════╝░░░░░░░╚═════╝░╚══════╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
 
 
-    [1] USOM
-    [2] WHOISDS
-    [3] Typo (bakımda)
+    [1] USOM Search Active
+    [2] WHOISDS Search Active 
+    [3] Typo (maintenance)
     [4] Show Selected
-    [5] Devam
+    [5] Continue
 
-    - ile seçimi silebilirsiniz.
+    - to remove selection
 
 ------
 note: Typo is not available for now

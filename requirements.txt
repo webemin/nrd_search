@@ -1,6 +1,12 @@
+beautifulsoup4
+DateTime
+lxml
+openpyxl
 pandas
+urllib3
 requests
 elementpath
-beautifulsoup4
-urllib3
-lxml
+
+
+
+

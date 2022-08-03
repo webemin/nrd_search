@@ -1,3 +1,2 @@
-deniz
-akbank
-kuveyt
+keyword1
+keyword2

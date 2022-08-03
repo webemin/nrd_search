@@ -1,13 +1,14 @@
 from encodings import utf_8
 from datetime import datetime, timedelta
+from operator import index
 import zipfile
 import time
 import os, shutil
 import xml.etree.ElementTree as ET
-import pandas
 import requests
 from bs4 import BeautifulSoup
 import  urllib.request
+import pandas as pd
 
 def wait_until_download(path_for_download):
     while not os.path.exists(path_for_download):
@@ -15,17 +16,17 @@ def wait_until_download(path_for_download):
     if os.path.isfile(path_for_download):
         return
 
-def usom_search(isDefault, date1_i, date2_i):
+def usom_search(isDefault, date1_i, date2_i, keywords_a):
     
-    if isDefault == "interface": #eğer interfaceden alacaksak input ile değiştiriyoruz
-        isDefault = input("Usomun tarih değerleri varsayılan (dün ve bugün) olarak kalsın mı?(y/n)")
+    if isDefault == "interface": #replace with input if it gets interface parameter
+        isDefault = input("Do you want usom's paramteters as deafult?(y/n)")
 
     if isDefault == "n":
 
-        date1_i = input("Başlangıç Tarihini Giriniz (YIL-AY-GÜN): ")
+        date1_i = input("From Date: (YYYY-MM-DD): ")
         date1_data = date1_i.split("-")
 
-        date2_i = input("Bitiş Tarihini Giriniz (YIL-AY-GÜN) (t: bugünün tarihi): ")
+        date2_i = input("To Date (YYYY-MM-DD) [t: for today]: ")
         dates2_data = date2_i.split("-")
 
         date1_using = datetime(int(date1_data[0]), int(date1_data[1]), int(date1_data[2]))
@@ -40,7 +41,6 @@ def usom_search(isDefault, date1_i, date2_i):
         date2_using = datetime.today() + timedelta(days=1)
     
     elif isDefault == "nn":
-        
         date1_data = date1_i.split("-")
         dates2_data = date2_i.split("-")
 
@@ -54,10 +54,9 @@ def usom_search(isDefault, date1_i, date2_i):
     elif isDefault == "yy":
         date1_using = date1_i
         date2_using = date2_i
-
     
     else:
-        print("Yanlış Giriş")
+        print("Wrong Enterence.")
         
     URL = "https://www.usom.gov.tr/url-list.xml"
 
@@ -74,23 +73,30 @@ def usom_search(isDefault, date1_i, date2_i):
 
     date_rage = pandas.date_range(date1_using,date2_using,freq='d')
 
-    print("\nBakılan Usom Tarihleri: ")
+    print("\nDates for Usom: ")
     for a in date_rage[:-1]: print(str(a).split(" ")[0])
 
-    usom_domains_str = ""
+    df_usom = pd.DataFrame(columns=['Date', 'Domain', 'Keyword', 'Source'])
 
-    for index_of_date in range(len(date_rage)-1):
-        index_of_usom = 0
-        for index_of_usom in range(len(root[1])-1):
-            if (root[1][index_of_usom][4].text).split(" ")[0] == str(date_rage[index_of_date]).split(" ")[0]:
-                usom_domains_str += root[1][index_of_usom][4].text.split(" ")[0] + "=" + (root[1][index_of_usom][1].text + "\n")
-            index_of_usom+=1
-        index_of_date+=1
+    for keyword in keywords_a:
+        for index_of_date in range(len(date_rage)-1):
+            index_of_usom = 0
+            for index_of_usom in range(len(root[1])-1):
+                date_urllist = root[1][index_of_usom][4].text.split(" ")[0]
+                date_for = str(date_rage[index_of_date]).split(" ")[0]
+                if date_urllist == date_for:
+                    domain = root[1][index_of_usom][1].text
+                    date = date_urllist
+                    if keyword in domain:
+                        df_usom = pd.concat([df_usom, pd.DataFrame.from_records([{'Date': date, 'Domain': domain, 'Keyword': keyword, 'Source': 'Usom'}])])
+                index_of_usom+=1
+            index_of_date+=1
+    
+    df_usom = df_usom.drop_duplicates(subset='Domain', keep="first")
 
-    usom_domains_a = usom_domains_str.split("\n")
-    return usom_domains_a
+    return df_usom
 
-def whoisds_search():
+def whoisds_search(keywords_a):
 
     whoisds_source_code = urllib.request.urlopen("https://www.whoisds.com/newly-registered-domains")
     soup = BeautifulSoup(whoisds_source_code, features="lxml")
@@ -117,17 +123,26 @@ def whoisds_search():
 
     whoisds_domains_f = open('./temp/domain-names.txt', 'r')
     whoisds_domains_l = whoisds_domains_f.readlines()
-
-    whoisds_domains_str = ""
-
-    for whoisds_domain in whoisds_domains_l:
-        whoisds_domains_str+=whoisds_domain
-
-    whoisds_domains_a = whoisds_domains_str.split("\n")
-
     whoisds_domains_f.close()
-    return whoisds_domains_a, whoisds_date
+
+    df_whoisds = pd.DataFrame(columns=['Date', 'Domain', 'Keyword', 'Source'])
+
+    for keyword in keywords_a:
+        for whoisds_domain in whoisds_domains_l:
+            whoisds_domain = whoisds_domain[:-1]
+            if keyword in whoisds_domain:
+                df_whoisds = pd.concat([df_whoisds, pd.DataFrame.from_records([{'Date': whoisds_date, 'Domain': whoisds_domain, 'Keyword': keyword, 'Source': 'Whoisds'}])])
+    
+    df_whoisds = df_whoisds.drop_duplicates(subset='Domain', keep="first")
+
+    return df_whoisds
    
+def formatter(whoisds_domains_df, usom_domains_df):
+    frames = [whoisds_domains_df, usom_domains_df]
+    result = pd.concat(frames)
+    print(result)
+    result.to_excel("results.xlsx", index = False)  
+
 def file_to_str(file_path):
     file_f = open(file_path, "r", encoding="utf8")
     file_l = file_f.readlines()
@@ -150,13 +165,13 @@ def welcome_page():
     ╚═╝░░╚══╝╚═╝░░╚═╝╚═════╝░░░░░░░╚═════╝░╚══════╝╚═╝░░╚═╝╚═╝░░╚═╝░╚════╝░╚═╝░░╚═╝
 
 
-    [1] USOM
-    [2] WHOISDS
-    [3] Typo (bakımda)
+    [1] USOM Search Active
+    [2] WHOISDS Search Active 
+    [3] Typo (maintenance)
     [4] Show Selected
-    [5] Devam
+    [5] Continue
 
-    - ile seçimi silebilirsiniz.
+    - to remove selection
 
     """)
     print(welcome)
@@ -164,39 +179,51 @@ def welcome_page():
 def chose_platform(isDevam, isUsom, isWhoisds, isTypo):
 
     def show_selected():
-        if(isUsom): print("Usom Seçildi")
-        if(isWhoisds): print("Whoisds Seçildi")
-        if(isTypo): print("Typo Açık")
+        if(isUsom): print("Usom has selected")
+        if(isWhoisds): print("Whoisds has selected")
+        if(isTypo): print("Typo is turned on")
 
     while not isDevam:
-        s1 = input("\nSeçim: ")
+        s1 = input("Chose: ")
         if(s1 == "1"):
             isUsom = True
-            print("Usom Seçildi, devam etmek için Devam'ı seçiniz.")
+            os.system('CLS')
+            welcome_page()
+            print("Usom is selected, select 5 to continue.")
         elif(s1 == "-1"): 
             isUsom = False
-            print("Usom Devredışı, devam etmek için Devam'ı seçiniz.")
+            os.system('CLS')
+            welcome_page()
+            print("Usom is unselected, select 5 to continue.")
         elif(s1 == "2"): 
             isWhoisds = True
-            print("Whoisds Seçildi, devam etmek için Devam'ı seçiniz.")
+            os.system('CLS')
+            welcome_page()
+            print("Whoisds is selected, select 5 to continue.")
         elif(s1 == "-2"): 
             isWhoisds = False
-            print("Whoisds Devredışı, devam etmek için Devam'ı seçiniz.")
+            os.system('CLS')
+            welcome_page()
+            print("Whoisds is unselected, select 5 to continue.")
         elif(s1 == "3"): 
             isTypo = True
-            print("Typo Seçildi, devam etmek için Devam'ı seçiniz.")
+            os.system('CLS')
+            welcome_page()
+            print("Typo is selected, select 5 to continue.")
         elif(s1 == "-3"): 
             isTypo = False
-            print("Typo Devredışı, devam etmek için Devam'ı seçiniz.")
+            os.system('CLS')
+            welcome_page()
+            print("Typo is unselected, select 5 to continue.")
         elif(s1 == "4"): show_selected()
         elif(s1 == "5"): isDevam = True
-        else: print("Yanlış Seçim")
+        else: print("Wrong Chose")
         
     return isUsom, isWhoisds, isTypo
 
 def chose_typo():
     print("""
-    Uygulanmasını İstediğiniz Typoları Seçiniz:
+    Select typo types:
 
     [1] insertedKey
     [2] skipLetter
@@ -376,37 +403,6 @@ def makeTypo(keywords_a):
         f.write(str(keywords_a[i]) + "\n")
     
     return keywords_a
-
-def formatter(keywords_a, isWhoisds, isUsom, whoisds_domains_a, usom_domains_a, whoisds_date):
-    
-    whoisds_domain_dd = []
-    usom_domain_dd = []
-    final_text = ""
-
-    for keyword in keywords_a:
-        if(isWhoisds):
-            for whoisds_domain in whoisds_domains_a:
-                if keyword in whoisds_domain and whoisds_domain not in whoisds_domain_dd:
-                    final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Whoisds\n".format(whoisds_date, whoisds_domain, keyword)
-                    whoisds_domain_dd.append(whoisds_domain)
-        if(isUsom):
-            for usom_domain in usom_domains_a:
-                if keyword in usom_domain and usom_domain not in usom_domain_dd: 
-                    final_text += "Tarih: {:15} Domain: {:60} Keyword: {:15} Kaynak: Usom\n".format(str(usom_domain).split("=")[0], str(usom_domain).split("=")[1], keyword)
-                    usom_domain_dd.append(usom_domain)
-
-    final_text_a = final_text.split("\n")
-    final_text_a.sort()
-
-    final_text_s = ""
-    for i in final_text_a:
-        final_text_s += i + "\n"
-
-    print(final_text_s)
-
-    final_text_f = open("result.txt", "w", encoding="utf-8")
-    final_text_f.write(final_text_s)
-    final_text_f.close()
 
 def list_keywords(keywords_a):
     print("\nAranan Keywordler: ")
