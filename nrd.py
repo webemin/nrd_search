@@ -61,7 +61,7 @@ def main():
 
         if(isWhoisds): whoisds_domains_df = whoisds_search(keywords_a)
 
-        else: print("Parameters are expected. -h to see help")
+        else: print("Arguments are expected. -h to see help")
     
     else: print("Too many arguments. -h to see help")                  
             
@@ -69,7 +69,7 @@ def main():
 
     formatter(whoisds_domains_df, usom_domains_df)
 
-    #temp_cleaner()
+    temp_cleaner()
 
 if __name__ == '__main__':
     main()

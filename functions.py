@@ -19,7 +19,7 @@ def wait_until_download(path_for_download):
 def usom_search(isDefault, date1_i, date2_i, keywords_a):
     
     if isDefault == "interface": #replace with input if it gets interface parameter
-        isDefault = input("Do you want usom's paramteters as deafult?(y/n)")
+        isDefault = input("Do you want to use default (yesterday and today) dates for usom?(y/n)")
 
     if isDefault == "n":
 
@@ -56,7 +56,7 @@ def usom_search(isDefault, date1_i, date2_i, keywords_a):
         date2_using = date2_i
     
     else:
-        print("Wrong Enterence.")
+        print("Wrong Input.")
         
     URL = "https://www.usom.gov.tr/url-list.xml"
 
@@ -71,9 +71,9 @@ def usom_search(isDefault, date1_i, date2_i, keywords_a):
     tree = ET.parse("./temp/url-list.xml")
     root = tree.getroot()
 
-    date_rage = pandas.date_range(date1_using,date2_using,freq='d')
+    date_rage = pd.date_range(date1_using,date2_using,freq='d')
 
-    print("\nDates for Usom: ")
+    print("\nUsom Dates: ")
     for a in date_rage[:-1]: print(str(a).split(" ")[0])
 
     df_usom = pd.DataFrame(columns=['Date', 'Domain', 'Keyword', 'Source'])
@@ -140,7 +140,13 @@ def whoisds_search(keywords_a):
 def formatter(whoisds_domains_df, usom_domains_df):
     frames = [whoisds_domains_df, usom_domains_df]
     result = pd.concat(frames)
-    print(result)
+
+    with pd.option_context('display.max_rows', None,
+                       'display.max_columns', None,
+                       'display.precision', 3,
+                       ):
+        print(result)
+    
     result.to_excel("results.xlsx", index = False)  
 
 def file_to_str(file_path):
